@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: inter;
+  src: url();
+}
+
+@theme {
+  --color-arsenic: #424242;
+  --color-cadet-blue: #A7AFC9;
+  --color-chinese-silver: #CBCBD0;
+  --color-davy-gray: #565656;
+  --color-french-gray: #C0C1C5;
+}
+
+#root {
+  /* min-width: 100%;
+  min-height: 100%; */
+  /*max-width: 1280px;*/
+  margin: 0 auto;
+}
+
+.inter-font {
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+}
