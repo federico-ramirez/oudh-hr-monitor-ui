@@ -9,8 +9,8 @@ export const ApiServices = {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    fechas: ["2022-05-16", "2022-05-17"],
-                    derechos: ["vida", "salud", "vivienda"],
+                    fechas: ["2022-05-15", "2022-05-16", "2022-05-17", "2022-05-18", "2022-05-19"],
+                    derechos: ["vida", "salud", "vivienda", "educación"],
                 }),
             });
 

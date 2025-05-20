@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import HeatmapChart from "../../components/Maps/Heatmap";
 import { ApiServices } from "../../services/api.service";
+import MapView from "../../components/Maps/MapView";
 
 // const resultados = [
 //     {
@@ -277,7 +278,11 @@ export default function Results() {
                 {
                     loadingHeatmap
                     ? <p>Cargando...</p>
-                    : <HeatmapChart resultados={results} />
+                    : 
+                    <>
+                        <HeatmapChart resultados={results} />
+                        <MapView resultados={results} />
+                    </>
                 }
             </div>
 
