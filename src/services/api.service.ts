@@ -16,6 +16,8 @@ export const ApiServices = {
 
             const data = await response.json();
 
+            console.log(data);
+
             return data;
         } catch (error) {
             console.error("Error al consultar la API:", error);

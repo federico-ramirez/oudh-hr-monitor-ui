@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
+import jsPDF from 'jspdf';
 
 interface Conteo {
   derecho: string;
@@ -18,9 +19,9 @@ interface HeatmapChartProps {
 const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
   const [option, setOption] = useState({});
 
-  useEffect(() => {
-    console.log(resultados);
+  const heatmapRef = useRef<any>(undefined);
 
+  useEffect(() => {
     if (!resultados || resultados.length === 0) return;
 
     const fechas = resultados.map(r => r.fecha);
@@ -112,9 +113,42 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
     });
   }, [resultados]);
 
+  const exportToPdf = () => {
+    const echartsInstance = heatmapRef.current.getEchartsInstance();
+    const imgData = echartsInstance.getDataURL({
+      type: 'png',
+      pixelRatio: 2,
+      backgroundColor: '#fff',
+    });
+
+    const pdf = new jsPDF('landscape');
+    const width = pdf.internal.pageSize.getWidth();
+    const height = pdf.internal.pageSize.getHeight();
+    pdf.addImage(imgData, 'PNG', 10, 10, width - 20, height - 60);
+    pdf.save('heatmap.pdf');
+  }
+
+    const downloadImage = (type: 'png' | 'jpg' | 'svg') => {
+    const echartsInstance = heatmapRef.current?.getEchartsInstance();
+    if (!echartsInstance) return;
+
+    const dataURL = echartsInstance.getDataURL({
+      type,
+      pixelRatio: 2,
+      backgroundColor: '#fff',
+    });
+
+    const link = document.createElement('a');
+    link.href = dataURL;
+    link.download = `heatmap.${type}`;
+    link.click();
+  };
+
   return (
     <div className="w-full h-[500px] mt-[-25px]">
-      <ReactECharts option={option} style={{ height: '100%', width: '100%' }} />
+      <ReactECharts ref={heatmapRef} option={option} style={{ height: '100%', width: '100%' }} />
+
+      <button onClick={() => downloadImage("png")}>DESCARGAR</button>
     </div>
   );
 };
