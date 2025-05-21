@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import HeatmapChart from "../../components/Maps/Heatmap";
 import { ApiServices } from "../../services/api.service";
 import MapView from "../../components/Maps/MapView";
+import { useLocation } from "react-router-dom";
 
 // const resultados = [
 //     {
@@ -252,6 +253,8 @@ import MapView from "../../components/Maps/MapView";
 // ]
 
 export default function Results() {
+    const location = useLocation()
+    const { derechos } = location.state || { derechos: [] }
     const [loadingHeatmap, setLoadingHeatmap] = useState(true);
 
     const [results, setResults] = useState<any[]>([]);
@@ -259,7 +262,7 @@ export default function Results() {
     const getHeatmapData = async () => {
         setLoadingHeatmap(true);
 
-        const data = await ApiServices.classifyNews();
+        const data = await ApiServices.classifyNews(derechos);
 
         setResults(data.resultados);
 
@@ -271,15 +274,18 @@ export default function Results() {
     }, [])
 
     return (
-        <div className="w-full p-8 flex flex-col">
+        <div className="w-full p-8 flex flex-col text-center">
             <div className="flex flex-col items-center">
-                <p className="text-2xl font-bold">Cantidad de noticias por derecho</p>
-
                 {
                     loadingHeatmap
-                    ? <p>Cargando...</p>
+                    ? 
+                    <>
+                        <p className="text-2xl font-bold">Cargando resultados...</p>
+                        <p className="text-xl">Por favor, espere, no recargue y no cierre esta página mientras se procesa el monitoreo</p>
+                    </>
                     : 
                     <>
+                        <p className="text-2xl font-bold">Cantidad de noticias por derecho</p>
                         <HeatmapChart resultados={results} />
                         <MapView resultados={results} />
                     </>
