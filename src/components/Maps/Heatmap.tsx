@@ -82,9 +82,13 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
         calculable: true,
         realtime: false,
         inRange: {
+            // color: [
+            //     '#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf',
+            //     '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'
+            // ]
             color: [
-                '#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf',
-                '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'
+              '#000005', '#0f052d', '#2d055a', '#4a0b64', '#832864', '#b7324b',
+              '#d75532', '#ef8118', '#faa514', '#f3cd3e', '#e7e7a1'
             ]
         }
       },
