@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import jsPDF from 'jspdf';
+import { useDownloadMenu } from '../../hooks/useDownloadMenu';
+import { ExportButton } from '../Buttons/ExportButton';
+import { AvailableImageFormatToExport } from '../../types/types';
 
 interface Conteo {
   derecho: string;
@@ -20,6 +23,8 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
   const [option, setOption] = useState({});
 
   const heatmapRef = useRef<any>(undefined);
+
+  const { openDownloadMenu, toggleOpenDownloadMenu } = useDownloadMenu();
 
   useEffect(() => {
     if (!resultados || resultados.length === 0) return;
@@ -85,14 +90,14 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
         calculable: true,
         realtime: false,
         inRange: {
-            // color: [
-            //     '#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf',
-            //     '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'
-            // ]
-            color: [
-              '#000005', '#0f052d', '#2d055a', '#4a0b64', '#832864', '#b7324b',
-              '#d75532', '#ef8118', '#faa514', '#f3cd3e', '#e7e7a1'
-            ]
+          // color: [
+          //     '#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf',
+          //     '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'
+          // ]
+          color: [
+            '#000005', '#0f052d', '#2d055a', '#4a0b64', '#832864', '#b7324b',
+            '#d75532', '#ef8118', '#faa514', '#f3cd3e', '#e7e7a1'
+          ]
         }
       },
       series: [
@@ -128,7 +133,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
     pdf.save('heatmap.pdf');
   }
 
-    const downloadImage = (type: 'png' | 'jpg' | 'svg') => {
+  const exportToImage = (type: AvailableImageFormatToExport) => {
     const echartsInstance = heatmapRef.current?.getEchartsInstance();
     if (!echartsInstance) return;
 
@@ -145,12 +150,28 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
   };
 
   return (
-    <div className="w-full h-[500px] mt-[-25px]">
-      <ReactECharts ref={heatmapRef} option={option} style={{ height: '100%', width: '100%' }} />
+    <div className="w-full px-8 flex flex-col gap-4">
+      <div className="relative flex justify-center">
+        <p className="text-2xl font-bold">Cantidad de noticias por derecho</p>
 
-      <button onClick={() => downloadImage("png")}>DESCARGAR</button>
+        <div className="absolute right-6">
+          <div className="relative inline-block text-left">
+            <ExportButton
+              openDownloadMenu={openDownloadMenu}
+              toggleOpenDownloadMenu={toggleOpenDownloadMenu}
+              exportToPdf={exportToPdf}
+              exportToImage={exportToImage}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full h-[500px] mt-[-25px]">
+        <ReactECharts ref={heatmapRef} option={option} style={{ height: '100%', width: '100%' }} />
+      </div>
     </div>
   );
 };
 
 export default HeatmapChart;
+

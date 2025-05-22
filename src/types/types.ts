@@ -1,0 +1,1 @@
+export type AvailableImageFormatToExport = "png" | "jpg";

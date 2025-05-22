@@ -1,13 +1,12 @@
-import { useEffect, useRef } from 'react'
-// @ts-ignore
-import leafletImage from 'leaflet-image';
-import { MapContainer, Marker, Popup, TileLayer, GeoJSON, useMap } from 'react-leaflet'
+import { MapContainer, Marker, Popup, TileLayer, GeoJSON } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import departamentosGeoJSONData from '../../utils/departamentos-geoJSONData'
 import distritosGeoJSONData from '../../utils/distritos-geoJSONData'
 import { FeatureCollection } from 'geojson'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas';
+import { ExportButton } from '../Buttons/ExportButton';
+import { useDownloadMenu } from '../../hooks/useDownloadMenu';
 
 interface MapViewProps {
     resultados: {
@@ -21,19 +20,7 @@ interface MapViewProps {
 }
 
 export default function MapView({ resultados }: MapViewProps) {
-    const mapRef = useRef<any>(undefined);
-
-    function ResizeMap() {
-        const map = useMap();
-
-        useEffect(() => {
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 300); // espera para que el contenedor esté listo
-        }, [map]);
-
-        return null;
-    }
+    const { openDownloadMenu, toggleOpenDownloadMenu } = useDownloadMenu();
 
     const resultadosSet = resultados
 
@@ -82,7 +69,7 @@ export default function MapView({ resultados }: MapViewProps) {
         })
     });
 
-    const handleDownloadPDF = async () => {
+    const exportToPdf = async () => {
         const mapContainer = document.getElementById('map-container');
 
         if (!mapContainer) return;
@@ -109,7 +96,7 @@ export default function MapView({ resultados }: MapViewProps) {
         pdf.save('mapa-leaflet.pdf');
     };
 
-    const handleDownloadPNG = async () => {
+    const exportToImage = async () => {
         const mapContainer = document.getElementById('map-container'); // Asegúrate que este ID esté en tu div
 
         if (!mapContainer) return;
@@ -130,77 +117,92 @@ export default function MapView({ resultados }: MapViewProps) {
     };
 
     return (
-        filteredFeatures.length === 0 ?
-            <div className='w-full max-w-[1000px] max-h-[700px] p-8'>
-                <h1 className='text-center p-2 font-medium'>Mapa geográfico</h1>
-                <h3 className='text-center p-2 font-medium'>No se encontraron lugares de El Salvador en las noticias monitoreadas.</h3>
-                <MapContainer
-                    center={[13.75135, -88.91741]}
-                    zoom={9}
-                    scrollWheelZoom={false}
-                    className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
-                    <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    <GeoJSON data={departamentosGeoJSONData} />
-                </MapContainer>
-            </div> :
-            <div className='w-full max-w-[1000px] max-h-[700px] p-8'>
-                <h1 className='text-center p-2 font-medium'>Mapa geográfico</h1>
+        <div className="w-full px-8 pt-8 flex flex-col items-center gap-4">
+            <div className="w-full relative flex justify-center">
+                <p className="text-2xl font-bold">Ubicación geográfica de los hechos</p>
 
-                <div id='map-container'>
-                    <MapContainer
-                        center={[13.75135, -88.91741]}
-                        zoom={9}
-                        scrollWheelZoom={false}
-                        className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
-                        <ResizeMap />
-                        <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                <div className="absolute right-6">
+                    <div className="relative inline-block text-left">
+                        <ExportButton
+                            openDownloadMenu={openDownloadMenu}
+                            toggleOpenDownloadMenu={toggleOpenDownloadMenu}
+                            exportToPdf={exportToPdf}
+                            exportToImage={exportToImage}
                         />
-                        {filteredGeoJSON.features.map((feature, index) => {
-                            let position: [number, number] | null = null;
-
-                            if (feature.geometry.type === 'Polygon') {
-                                const coords = feature.geometry.coordinates[0][0];
-                                position = [coords[1], coords[0]];
-                            } else if (feature.geometry.type === 'MultiPolygon') {
-                                const coords = feature.geometry.coordinates[0][0][0];
-                                position = [coords[1], coords[0]];
-                            }
-
-                            return position ? (
-                                <Marker key={index} position={position}>
-                                    <Popup>
-                                        Derecho(s):
-                                        <b>
-                                            {
-                                                (() => {
-                                                    const shapeName = feature.properties?.shapeName;
-                                                    const normalizedeShapeName = shapeName
-                                                        ?.normalize("NFD")
-                                                        .replace(/[\u0300-\u036f]/g, "")
-                                                        .toLowerCase();
-
-                                                    const derechos = normalizedeShapeName ?
-                                                        lugarToDerechoMap.get(normalizedeShapeName) : null;
-
-                                                    return derechos?.length ? " " + derechos.join(", ") + " detectado(s) en " + shapeName : "Sin información";
-                                                })()
-                                            }
-                                        </b>
-                                    </Popup>
-                                </Marker>
-                            ) : null;
-                        })}
-
-                        <GeoJSON data={departamentosGeoJSONData} />
-                    </MapContainer>
+                    </div>
                 </div>
-
-                <button onClick={handleDownloadPNG}>DESCARGAR</button>
             </div>
+
+            <div className='w-full max-w-[1000px] max-h-[700px] p-8'>
+                {
+                    filteredFeatures.length === 0 ?
+                        <>
+                            <h1 className='text-center p-2 font-medium'>Mapa geográfico</h1>
+                            <h3 className='text-center p-2 font-medium'>No se encontraron lugares de El Salvador en las noticias monitoreadas.</h3>
+                            <MapContainer
+                                center={[13.75135, -88.91741]}
+                                zoom={9}
+                                scrollWheelZoom={false}
+                                className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
+                                <TileLayer
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                />
+                                <GeoJSON data={departamentosGeoJSONData} />
+                            </MapContainer>
+                        </>
+                        :
+                        <div id='map-container'>
+                                <MapContainer
+                                    center={[13.75135, -88.91741]}
+                                    zoom={9}
+                                    scrollWheelZoom={false}
+                                    className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
+                                    <TileLayer
+                                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    />
+                                    {filteredGeoJSON.features.map((feature, index) => {
+                                        let position: [number, number] | null = null;
+
+                                        if (feature.geometry.type === 'Polygon') {
+                                            const coords = feature.geometry.coordinates[0][0];
+                                            position = [coords[1], coords[0]];
+                                        } else if (feature.geometry.type === 'MultiPolygon') {
+                                            const coords = feature.geometry.coordinates[0][0][0];
+                                            position = [coords[1], coords[0]];
+                                        }
+
+                                        return position ? (
+                                            <Marker key={index} position={position}>
+                                                <Popup>
+                                                    Derecho(s):
+                                                    <b>
+                                                        {
+                                                            (() => {
+                                                                const shapeName = feature.properties?.shapeName;
+                                                                const normalizedeShapeName = shapeName
+                                                                    ?.normalize("NFD")
+                                                                    .replace(/[\u0300-\u036f]/g, "")
+                                                                    .toLowerCase();
+
+                                                                const derechos = normalizedeShapeName ?
+                                                                    lugarToDerechoMap.get(normalizedeShapeName) : null;
+
+                                                                return derechos?.length ? " " + derechos.join(", ") + " detectado(s) en " + shapeName : "Sin información";
+                                                            })()
+                                                        }
+                                                    </b>
+                                                </Popup>
+                                            </Marker>
+                                        ) : null;
+                                    })}
+
+                                    <GeoJSON data={departamentosGeoJSONData} />
+                                </MapContainer>
+                            </div>
+                }
+            </div>
+        </div>
     )
 }
