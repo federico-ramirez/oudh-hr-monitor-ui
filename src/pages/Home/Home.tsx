@@ -8,7 +8,7 @@ export default function Home() {
                     <div className='w-full max-w-[650px] m-auto text-center text-black'>
                         <h2 className='text-2xl font-semibold'>¡Bienvenido!</h2>
                         <h3 className='text-2xl font-semibold'>Soy tu asistente de monitoreo de Derechos Humanos</h3>
-                        <p className='my-4'>Para empezar el monitoreo, por favor escribe el tema en el que tengas interés y sube el archivo para poder analizarlo</p>
+                        <p className='my-4'>Para empezar el monitoreo, por favor selecciona o escribe una o varias temáticas para poder analizarlas</p>
                     </div>
                     <UserPromptInput />
                     <p className='w-full text-center text-arsenic font-light text-xs mt-4'>Powered by Gemma2:9b</p>
