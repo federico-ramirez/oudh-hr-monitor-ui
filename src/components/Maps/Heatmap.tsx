@@ -19,8 +19,6 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
   const [option, setOption] = useState({});
 
   useEffect(() => {
-    console.log(resultados);
-
     if (!resultados || resultados.length === 0) return;
 
     const fechas = resultados.map(r => r.fecha);
