@@ -254,7 +254,7 @@ import { useLocation } from "react-router-dom";
 
 export default function Results() {
     const location = useLocation()
-    const { derechos } = location.state || { derechos: [] }
+    const { fechas = [], derechos = [] } = location.state || { fechas: [], derechos: [] }
     const [loadingHeatmap, setLoadingHeatmap] = useState(true);
 
     const [results, setResults] = useState<any[]>([]);
@@ -262,7 +262,7 @@ export default function Results() {
     const getHeatmapData = async () => {
         setLoadingHeatmap(true);
 
-        const data = await ApiServices.classifyNews(derechos);
+        const data = await ApiServices.classifyNews(fechas, derechos);
 
         setResults(data.resultados);
 
