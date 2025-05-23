@@ -1,12 +1,14 @@
+import { useRef } from 'react'
 import { MapContainer, Marker, Popup, TileLayer, GeoJSON } from 'react-leaflet'
-import 'leaflet/dist/leaflet.css'
-import departamentosGeoJSONData from '../../utils/departamentos-geoJSONData'
-import distritosGeoJSONData from '../../utils/distritos-geoJSONData'
 import { FeatureCollection } from 'geojson'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas';
 import { ExportButton } from '../Buttons/ExportButton';
 import { useDownloadMenu } from '../../hooks/useDownloadMenu';
+import { AvailableImageFormatToExport } from '../../types/types'
+import jsPDF from 'jspdf'
+import domtoimage from 'dom-to-image';
+import departamentosGeoJSONData from '../../utils/departamentos-geoJSONData'
+import distritosGeoJSONData from '../../utils/distritos-geoJSONData'
+import 'leaflet/dist/leaflet.css'
 
 interface MapViewProps {
     resultados: {
@@ -20,6 +22,8 @@ interface MapViewProps {
 }
 
 export default function MapView({ resultados }: MapViewProps) {
+    const mapaRef = useRef<HTMLDivElement>(null);
+
     const { openDownloadMenu, toggleOpenDownloadMenu } = useDownloadMenu();
 
     const resultadosSet = resultados
@@ -69,51 +73,58 @@ export default function MapView({ resultados }: MapViewProps) {
         })
     });
 
-    const exportToPdf = async () => {
-        const mapContainer = document.getElementById('map-container');
+    const exportToPdf = () => {
+        if (!mapaRef.current) {
+            console.error('Mapa no cargado');
+            return;
+        }
 
-        if (!mapContainer) return;
+        domtoimage.toPng(mapaRef.current)
+            .then((dataUrl) => {
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4',
+                });
 
-        const canvas = await html2canvas(mapContainer, {
-            useCORS: true, // importante para capturar los tiles
-            allowTaint: false,
-            logging: false,
-            scale: 2, // mejora la resolución del canvas
-        });
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const centerX = pageWidth / 2; // X coordinate to center texts
 
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('landscape');
+                const img = new Image();
+                img.onload = () => {
+                    let yOffset = 15; // Initial spacing from the top border of the page
 
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = pageWidth - 20;
-        const imgHeight = pageHeight - 60;
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(16);
+                    pdf.text('Ubicación geográfica de los hechos', centerX, yOffset, { align: 'center' });
 
-        const imgX = 10;
-        const imgY = 10;
+                    yOffset += 5; // Add some space after the title
 
-        pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth, imgHeight);
-        pdf.save('mapa-leaflet.pdf');
+                    pdf.addImage(dataUrl, 'PNG', 10, yOffset, pageWidth - 20, pageHeight - 40);
+                    pdf.save('mapa.pdf');
+                };
+                img.src = dataUrl;
+            })
+            .catch((error) => {
+                console.error('Error generando imagen:', error);
+            });
     };
 
-    const exportToImage = async () => {
-        const mapContainer = document.getElementById('map-container'); // Asegúrate que este ID esté en tu div
+    const exportToImage = (type: AvailableImageFormatToExport) => {
+        if (!mapaRef.current) return;
 
-        if (!mapContainer) return;
+        const toImage = type === 'png' ? domtoimage.toPng : domtoimage.toJpeg;
+        const options = type === 'jpg' ? { quality: 0.95 } : undefined;
 
-        const canvas = await html2canvas(mapContainer, {
-            useCORS: true,       // necesario para capturar tiles de Leaflet
-            allowTaint: false,
-            logging: false,
-            scale: 2,            // escala para mejor resolución
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-
-        const link = document.createElement('a');
-        link.href = imgData;
-        link.download = 'mapa-leaflet.png';
-        link.click();
+        toImage(mapaRef.current, options)
+            .then((dataUrl: string) => {
+                const link = document.createElement('a');
+                link.download = `mapa.${type}`;
+                link.href = dataUrl;
+                link.click();
+            })
+            .catch((error: any) => console.error(`Error exportando ${type.toUpperCase()}:`, error));
     };
 
     return (
@@ -133,75 +144,62 @@ export default function MapView({ resultados }: MapViewProps) {
                 </div>
             </div>
 
-            <div className='w-full max-w-[1000px] max-h-[700px] p-8'>
+            <div className='w-full max-w-[1000px] max-h-[700px] flex flex-col items-center gap-4'>
                 {
-                    filteredFeatures.length === 0 ?
-                        <>
-                            <h1 className='text-center p-2 font-medium'>Mapa geográfico</h1>
-                            <h3 className='text-center p-2 font-medium'>No se encontraron lugares de El Salvador en las noticias monitoreadas.</h3>
-                            <MapContainer
-                                center={[13.75135, -88.91741]}
-                                zoom={9}
-                                scrollWheelZoom={false}
-                                className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
-                                <TileLayer
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                />
-                                <GeoJSON data={departamentosGeoJSONData} />
-                            </MapContainer>
-                        </>
-                        :
-                        <div id='map-container'>
-                                <MapContainer
-                                    center={[13.75135, -88.91741]}
-                                    zoom={9}
-                                    scrollWheelZoom={false}
-                                    className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
-                                    <TileLayer
-                                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                    />
-                                    {filteredGeoJSON.features.map((feature, index) => {
-                                        let position: [number, number] | null = null;
-
-                                        if (feature.geometry.type === 'Polygon') {
-                                            const coords = feature.geometry.coordinates[0][0];
-                                            position = [coords[1], coords[0]];
-                                        } else if (feature.geometry.type === 'MultiPolygon') {
-                                            const coords = feature.geometry.coordinates[0][0][0];
-                                            position = [coords[1], coords[0]];
-                                        }
-
-                                        return position ? (
-                                            <Marker key={index} position={position}>
-                                                <Popup>
-                                                    Derecho(s):
-                                                    <b>
-                                                        {
-                                                            (() => {
-                                                                const shapeName = feature.properties?.shapeName;
-                                                                const normalizedeShapeName = shapeName
-                                                                    ?.normalize("NFD")
-                                                                    .replace(/[\u0300-\u036f]/g, "")
-                                                                    .toLowerCase();
-
-                                                                const derechos = normalizedeShapeName ?
-                                                                    lugarToDerechoMap.get(normalizedeShapeName) : null;
-
-                                                                return derechos?.length ? " " + derechos.join(", ") + " detectado(s) en " + shapeName : "Sin información";
-                                                            })()
-                                                        }
-                                                    </b>
-                                                </Popup>
-                                            </Marker>
-                                        ) : null;
-                                    })}
-
-                                    <GeoJSON data={departamentosGeoJSONData} />
-                                </MapContainer>
-                            </div>
+                    filteredFeatures.length === 0 &&
+                    <h2 className='text-center p-2 font-medium'>No se encontraron lugares de El Salvador en las noticias monitoreadas</h2>
                 }
+
+                <div id='map-container' ref={mapaRef}>
+                    <MapContainer
+                        center={[13.75135, -88.91741]}
+                        zoom={9}
+                        scrollWheelZoom={false}
+                        className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
+                        <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        {filteredGeoJSON.features.map((feature, index) => {
+                            let position: [number, number] | null = null;
+
+                            if (feature.geometry.type === 'Polygon') {
+                                const coords = feature.geometry.coordinates[0][0];
+                                position = [coords[1], coords[0]];
+                            } else if (feature.geometry.type === 'MultiPolygon') {
+                                const coords = feature.geometry.coordinates[0][0][0];
+                                position = [coords[1], coords[0]];
+                            }
+
+                            return position ? (
+                                <Marker key={index} position={position}>
+                                    <Popup>
+                                        Derecho(s):
+                                        <b>
+                                            {
+                                                (() => {
+                                                    const shapeName = feature.properties?.shapeName;
+                                                    const normalizedeShapeName = shapeName
+                                                        ?.normalize("NFD")
+                                                        .replace(/[\u0300-\u036f]/g, "")
+                                                        .toLowerCase();
+
+                                                    const derechos = normalizedeShapeName ?
+                                                        lugarToDerechoMap.get(normalizedeShapeName) : null;
+
+                                                    return derechos?.length ? " " + derechos.join(", ") + " detectado(s) en " + shapeName : "Sin información";
+                                                })()
+                                            }
+                                        </b>
+                                    </Popup>
+                                </Marker>
+                            ) : null;
+                        })}
+
+                        <GeoJSON data={departamentosGeoJSONData} />
+                    </MapContainer>
+                </div>
+
             </div>
         </div>
     )

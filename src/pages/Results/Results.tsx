@@ -26,7 +26,7 @@ export default function Results() {
     }, [])
 
     return (
-        <div className="w-full py-8 flex flex-col gap-4">
+        <div className="w-full py-8 flex flex-col items-center gap-4">
                 {
                     loadingHeatmap
                     ? 
@@ -37,6 +37,7 @@ export default function Results() {
                     : 
                     <>
                         <HeatmapChart resultados={results} />
+                        <hr className="w-full h-[2px]"></hr>
                         <MapView resultados={results} />
                     </>
                 }

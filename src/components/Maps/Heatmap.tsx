@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import ReactECharts from 'echarts-for-react';
-import jsPDF from 'jspdf';
 import { useDownloadMenu } from '../../hooks/useDownloadMenu';
 import { ExportButton } from '../Buttons/ExportButton';
 import { AvailableImageFormatToExport } from '../../types/types';
+import ReactECharts from 'echarts-for-react';
+import jsPDF from 'jspdf';
 
 interface Conteo {
   derecho: string;
@@ -119,6 +119,8 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
   }, [resultados]);
 
   const exportToPdf = () => {
+    if (!heatmapRef.current) return;
+
     const echartsInstance = heatmapRef.current.getEchartsInstance();
     const imgData = echartsInstance.getDataURL({
       type: 'png',
@@ -126,11 +128,25 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
       backgroundColor: '#fff',
     });
 
-    const pdf = new jsPDF('landscape');
-    const width = pdf.internal.pageSize.getWidth();
-    const height = pdf.internal.pageSize.getHeight();
-    pdf.addImage(imgData, 'PNG', 10, 10, width - 20, height - 60);
-    pdf.save('heatmap.pdf');
+    const pdf = new jsPDF({
+      format: 'letter',
+      unit: 'mm',
+      orientation: 'landscape',
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const centerX = pageWidth / 2; // X coordinate to center texts
+    
+    let yOffset = 15; // Initial spacing from the top border of the page
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(16);
+    pdf.text('Cantidad de noticias por derecho', centerX, yOffset, { align: 'center' });
+
+    yOffset += 5; // Add some space after the title
+    pdf.addImage(imgData, 'PNG', 10, yOffset, pageWidth - 20, pageHeight - 100);
+    pdf.save('Mapa de calor.pdf');
   }
 
   const exportToImage = (type: AvailableImageFormatToExport) => {
@@ -145,12 +161,12 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
 
     const link = document.createElement('a');
     link.href = dataURL;
-    link.download = `heatmap.${type}`;
+    link.download = `Mapa de calor.${type}`;
     link.click();
   };
 
   return (
-    <div className="w-full px-8 flex flex-col gap-4">
+    <div className="w-full px-8 pb-8 flex flex-col gap-4">
       <div className="relative flex justify-center">
         <p className="text-2xl font-bold">Cantidad de noticias por derecho</p>
 
@@ -174,4 +190,3 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
 };
 
 export default HeatmapChart;
-
