@@ -31,8 +31,10 @@ export default function MapView({ resultados }: MapViewProps) {
     const resultadosLugaresSet = new Set(
         resultadosSet
             .flatMap(entry => entry.conteo)
+            .flatMap(entry => entry.conteo)
             .filter(item => item.lugares !== undefined)
             .flatMap(item =>
+                item.lugares.map(lugar =>
                 item.lugares.map(lugar =>
                     lugar.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
                 )
@@ -56,11 +58,14 @@ export default function MapView({ resultados }: MapViewProps) {
         features: filteredFeatures
     };
 
-    const lugarToDerechoMap = new Map<string, string[]>();
-    resultadosSet.forEach(entry => {
-        entry.conteo.forEach(item => {
-            item.lugares.forEach(lugar => {
+    const lugarToDerechoMap = new Map<string, { derecho: string, fecha: string }[]>();
+    resultadosSet?.forEach(entry => {
+        entry.conteo?.forEach(item => {
+            item.lugares?.forEach(lugar => {
                 const normalizedLugar = lugar
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase();
                     .normalize("NFD")
                     .replace(/[\u0300-\u036f]/g, "")
                     .toLowerCase();
@@ -68,7 +73,10 @@ export default function MapView({ resultados }: MapViewProps) {
                 if (!lugarToDerechoMap.has(normalizedLugar)) {
                     lugarToDerechoMap.set(normalizedLugar, []);
                 }
-                lugarToDerechoMap.get(normalizedLugar)?.push(item.derecho);
+                lugarToDerechoMap.get(normalizedLugar)?.push({
+                    derecho: item.derecho,
+                    fecha: entry.fecha
+                });
             })
         })
     });

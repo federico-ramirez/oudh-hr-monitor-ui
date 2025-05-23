@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './App.css'
@@ -11,15 +10,13 @@ import Results2 from './pages/Results/Results2'
 
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter>
-        <Nav />
-        <Routes>
-          <Route path='/' Component={Home} />
-          <Route path='/results' Component={Results} />
-          <Route path='/results2' Component={Results2} />
-        </Routes>
-        <Footer />
-    </BrowserRouter>
-  </StrictMode>
+  <BrowserRouter>
+    <Nav />
+    <Routes>
+      <Route path='/' Component={Home} />
+      <Route path='/results' Component={Results} />
+      <Route path='/results2' Component={Results2} />
+    </Routes>
+    <Footer />
+  </BrowserRouter>
 )

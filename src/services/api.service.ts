@@ -1,7 +1,7 @@
 const BASE_URL = "http://localhost:8000";
 
 export const ApiServices = {
-    classifyNews: async (derechos: string[]) => {
+    classifyNews: async (fechas: string[], derechos: string[]) => {
         try {
             const response = await fetch(`${BASE_URL}/procesar`, {
                 method: "POST",
@@ -9,7 +9,7 @@ export const ApiServices = {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    fechas: ["2022-05-15", "2022-05-16", "2022-05-17", "2022-05-18", "2022-05-19"],
+                    fechas: fechas,
                     derechos: derechos,
                 }),
             });
