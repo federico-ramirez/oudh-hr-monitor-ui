@@ -31,10 +31,8 @@ export default function MapView({ resultados }: MapViewProps) {
     const resultadosLugaresSet = new Set(
         resultadosSet
             .flatMap(entry => entry.conteo)
-            .flatMap(entry => entry.conteo)
             .filter(item => item.lugares !== undefined)
             .flatMap(item =>
-                item.lugares.map(lugar =>
                 item.lugares.map(lugar =>
                     lugar.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
                 )
@@ -63,9 +61,6 @@ export default function MapView({ resultados }: MapViewProps) {
         entry.conteo?.forEach(item => {
             item.lugares?.forEach(lugar => {
                 const normalizedLugar = lugar
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "")
-                    .toLowerCase();
                     .normalize("NFD")
                     .replace(/[\u0300-\u036f]/g, "")
                     .toLowerCase();
@@ -182,8 +177,7 @@ export default function MapView({ resultados }: MapViewProps) {
                             return position ? (
                                 <Marker key={index} position={position}>
                                     <Popup>
-                                        Derecho(s):
-                                        <b>
+                                        <span className='text-indigo-950 inter-font'>
                                             {
                                                 (() => {
                                                     const shapeName = feature.properties?.shapeName;
@@ -192,13 +186,29 @@ export default function MapView({ resultados }: MapViewProps) {
                                                         .replace(/[\u0300-\u036f]/g, "")
                                                         .toLowerCase();
 
-                                                    const derechos = normalizedeShapeName ?
-                                                        lugarToDerechoMap.get(normalizedeShapeName) : null;
+                                                    const entries = normalizedeShapeName
+                                                        ? lugarToDerechoMap.get(normalizedeShapeName)
+                                                        : null;
 
-                                                    return derechos?.length ? " " + derechos.join(", ") + " detectado(s) en " + shapeName : "Sin información";
+                                                    if (!entries?.length) return <span>Sin información</span>
+
+                                                    const derechosList = entries.map(e => e.derecho).join(", ");
+                                                    const fechasSet = Array.from(new Set(entries.map(e => e.fecha)))
+
+                                                    return (
+                                                        <>
+                                                            <span className='font-bold'>Información detectada:</span>
+                                                            <br />
+                                                            Fechas(s): <span className='font-bold'> {fechasSet.join(", ")} </span>
+                                                            <br />
+                                                            Derecho(s): <span className='font-bold'>{derechosList}</span>
+                                                            <br />
+                                                            Distrito: <span className='font-bold'> {shapeName} </span>
+                                                        </>
+                                                    );
                                                 })()
                                             }
-                                        </b>
+                                        </span>
                                     </Popup>
                                 </Marker>
                             ) : null;
