@@ -5,16 +5,11 @@ import { useNavigate } from "react-router-dom";
 import MyDate from "../../helpers/dateHelper";
 import { toast, ToastContainer } from "react-toastify";
 import { ApiServices } from "../../services/api.service";
+import { DateInput } from "../DateInput/DateInput";
 
 type OptionType = {
     value: string;
     label: string;
-}
-
-type ResponseProps = {
-    right: string,
-    id_right: string,
-    order: number
 }
 
 export default function UserPromptInput() {
@@ -29,7 +24,7 @@ export default function UserPromptInput() {
     const fetchHumanRightsData = async () => {
         try {
             const response = await ApiServices.getHumanRightsValues();
-            const values = response.map((item: any) => ({
+            const values: OptionType[] = response.map((item: any) => ({
                 value: item.right,
                 label: item.right,
             }));
@@ -150,40 +145,40 @@ export default function UserPromptInput() {
                 theme="colored"
             />
             <div className="flex flex-col lg:w-6/12 p-2">
-                <label className="text-sm font-semilight text-arsenic mb-1">
+                <label className="text-sm font-medium text-arsenic mb-1">
                     Seleccione una fecha inicial
                 </label>
-                <input
-                    type="date"
+                <DateInput
                     value={fechaInicial ? formatDateForInput(fechaInicial) : ''}
                     max={sabadoPasado ? formatDateForInput(sabadoPasado) : undefined}
                     min={formatDateForInput(minDate)}
-                    onChange={(e) => {
-                        const localDate = parseLocalDate(e.target.value)
-                        handleChangeFechaInicial(e.target.value) ?
-                            setFechaInicial(localDate) : setFechaInicial(fechaInicial)
+                    onChange={(val) => {
+                        const localDate = parseLocalDate(val);
+                        handleChangeFechaInicial(val)
+                            ? setFechaInicial(localDate)
+                            : setFechaInicial(fechaInicial);
                     }}
-                    className="h-10 px-4 bg-white rounded-sm focus:outline-indigo-900"
+                    className="h-10 px-4 bg-white rounded-sm"
                 />
             </div>
             <div className="flex flex-col lg:w-6/12 p-2">
-                <label className="text-sm font-semilight text-arsenic mb-1">
+                <label className="text-sm font-medium text-arsenic mb-1">
                     Seleccione una fecha final
                 </label>
-                <input
-                    type="date"
+                <DateInput
                     value={fechaFinal ? formatDateForInput(fechaFinal) : ''}
                     max={sabadoPasado ? formatDateForInput(sabadoPasado) : undefined}
-                    onChange={(e) => {
-                        const localDate = parseLocalDate(e.target.value)
-                        handleChangeFechaFinal(e.target.value) ?
-                            setFechaFinal(localDate) : setFechaFinal(fechaFinal)
+                    onChange={(val) => {
+                        const localDate = parseLocalDate(val);
+                        handleChangeFechaFinal(val)
+                            ? setFechaFinal(localDate)
+                            : setFechaFinal(fechaFinal);
                     }}
-                    className="h-10 px-4 bg-white rounded-sm focus:outline-indigo-900"
+                    className="h-10 px-4 bg-white rounded-sm"
                 />
             </div>
             <div id="select" className="flex flex-col w-full p-2">
-                <label className="text-sm font-semilight text-arsenic mb-1">
+                <label className="text-sm font-medium text-arsenic mb-1">
                     Ingrese una o varias temáticas de su interés para monitorear
                 </label>
                 <AsyncSelect
@@ -194,14 +189,19 @@ export default function UserPromptInput() {
                         setDerechosSeleccionados(selectedOption)
                     }}
                     defaultOptions={humanRightsOptions}
-                    placeholder={"Seleccione o escriba la(s) temática(s) de interés"}
+                    placeholder={"Seleccione la(s) temática(s) de interés"}
                     maxMenuHeight={250}
+                    classNames={{
+                        control: ({ isFocused }) =>
+                            `h-10  ${isFocused ? 'outline outline-2 outline-indigo-900' : 'outline outline-indigo-900'}`
+                    }}
+                    noOptionsMessage={({ inputValue }) => !inputValue ? "No hay más temáticas disponibles" : "No se encontró esa temática"}
                 />
             </div>
-            <div className="flex flex-col w-full lg:w-4/12 lg:mx-auto p-2">
+            <div className="flex flex-col w-full lg:mx-auto p-2 items-center">
                 <button
                     onClick={handleClick}
-                    className="bg-arsenic text-french-gray font-bold w-full h-12 rounded-lg hover:bg-davy-gray transition duration-200 mt-6 md:mt-0">
+                    className="bg-oudh-blue text-white font-semibold w-full md:w-4/12 h-12 rounded-lg hover:bg-liberty-blue transition duration-200 mt-6 md:mt-0">
                     Monitorear
                 </button>
             </div>
