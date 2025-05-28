@@ -168,7 +168,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ resultados }) => {
   return (
     <div className="w-full px-8 pb-8 flex flex-col gap-4">
       <div className="relative flex justify-center">
-        <p className="text-2xl font-bold">Cantidad de noticias por derecho</p>
+        <p className="text-2xl font-bold text-oudh-blue">Cantidad de noticias por derecho</p>
 
         <div className="absolute right-6">
           <div className="relative inline-block text-left">
