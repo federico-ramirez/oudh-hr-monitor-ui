@@ -133,91 +133,97 @@ export default function MapView({ resultados }: MapViewProps) {
     return (
         <div className="w-full px-8 pt-8 flex flex-col items-center gap-4">
             <div className="w-full relative flex justify-center">
-                <p className="text-2xl font-bold">Ubicación geográfica de los hechos</p>
+                <p className="text-2xl font-bold text-oudh-blue">Ubicación geográfica de los hechos</p>
 
                 <div className="absolute right-6">
                     <div className="relative inline-block text-left">
-                        <ExportButton
-                            openDownloadMenu={openDownloadMenu}
-                            toggleOpenDownloadMenu={toggleOpenDownloadMenu}
-                            exportToPdf={exportToPdf}
-                            exportToImage={exportToImage}
-                        />
+                        {
+                            filteredFeatures.length > 0 ?
+                                <ExportButton
+                                    openDownloadMenu={openDownloadMenu}
+                                    toggleOpenDownloadMenu={toggleOpenDownloadMenu}
+                                    exportToPdf={exportToPdf}
+                                    exportToImage={exportToImage}
+                                />
+                                : <></>
+                        }
                     </div>
                 </div>
             </div>
 
             <div className='w-full max-w-[1000px] max-h-[700px] flex flex-col items-center gap-4'>
                 {
-                    filteredFeatures.length === 0 &&
-                    <h2 className='text-center p-2 font-medium'>No se encontraron lugares de El Salvador en las noticias monitoreadas</h2>
+                    filteredFeatures.length > 0 ?
+                        <div id='map-container' ref={mapaRef}>
+                            <MapContainer
+                                center={[13.75135, -88.91741]}
+                                zoom={9}
+                                scrollWheelZoom={false}
+                                className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
+                                <TileLayer
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                />
+                                {filteredGeoJSON.features.map((feature, index) => {
+                                    let position: [number, number] | null = null;
+
+                                    if (feature.geometry.type === 'Polygon') {
+                                        const coords = feature.geometry.coordinates[0][0];
+                                        position = [coords[1], coords[0]];
+                                    } else if (feature.geometry.type === 'MultiPolygon') {
+                                        const coords = feature.geometry.coordinates[0][0][0];
+                                        position = [coords[1], coords[0]];
+                                    }
+
+                                    return position ? (
+                                        <Marker key={index} position={position}>
+                                            <Popup
+                                                autoClose={false}
+                                                closeOnClick={false}
+                                            >
+                                                <span className='text-indigo-950 inter-font'>
+                                                    {
+                                                        (() => {
+                                                            const shapeName = feature.properties?.shapeName;
+                                                            const normalizedeShapeName = shapeName
+                                                                ?.normalize("NFD")
+                                                                .replace(/[\u0300-\u036f]/g, "")
+                                                                .toLowerCase();
+
+                                                            const entries = normalizedeShapeName
+                                                                ? lugarToDerechoMap.get(normalizedeShapeName)
+                                                                : null;
+
+                                                            if (!entries?.length) return <span>Sin información</span>
+
+                                                            const derechosList = entries.map(e => e.derecho).join(", ");
+                                                            const fechasSet = Array.from(new Set(entries.map(e => e.fecha)))
+
+                                                            return (
+                                                                <>
+                                                                    <span className='font-bold'>Información detectada:</span>
+                                                                    <br />
+                                                                    Fechas(s): <span className='font-bold'> {fechasSet.join(", ")} </span>
+                                                                    <br />
+                                                                    Tema(s): <span className='font-bold'>{derechosList}</span>
+                                                                    <br />
+                                                                    Distrito: <span className='font-bold'> {shapeName} </span>
+                                                                </>
+                                                            );
+                                                        })()
+                                                    }
+                                                </span>
+                                            </Popup>
+                                        </Marker>
+                                    ) : null;
+                                })}
+
+                                <GeoJSON data={departamentosGeoJSONData} />
+                            </MapContainer>
+                        </div>
+                        :
+                        <h2 className='text-center p-2'>No se encontraron lugares de El Salvador en las noticias monitoreadas.</h2>
                 }
-
-                <div id='map-container' ref={mapaRef}>
-                    <MapContainer
-                        center={[13.75135, -88.91741]}
-                        zoom={9}
-                        scrollWheelZoom={false}
-                        className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
-                        <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        {filteredGeoJSON.features.map((feature, index) => {
-                            let position: [number, number] | null = null;
-
-                            if (feature.geometry.type === 'Polygon') {
-                                const coords = feature.geometry.coordinates[0][0];
-                                position = [coords[1], coords[0]];
-                            } else if (feature.geometry.type === 'MultiPolygon') {
-                                const coords = feature.geometry.coordinates[0][0][0];
-                                position = [coords[1], coords[0]];
-                            }
-
-                            return position ? (
-                                <Marker key={index} position={position}>
-                                    <Popup>
-                                        <span className='text-indigo-950 inter-font'>
-                                            {
-                                                (() => {
-                                                    const shapeName = feature.properties?.shapeName;
-                                                    const normalizedeShapeName = shapeName
-                                                        ?.normalize("NFD")
-                                                        .replace(/[\u0300-\u036f]/g, "")
-                                                        .toLowerCase();
-
-                                                    const entries = normalizedeShapeName
-                                                        ? lugarToDerechoMap.get(normalizedeShapeName)
-                                                        : null;
-
-                                                    if (!entries?.length) return <span>Sin información</span>
-
-                                                    const derechosList = entries.map(e => e.derecho).join(", ");
-                                                    const fechasSet = Array.from(new Set(entries.map(e => e.fecha)))
-
-                                                    return (
-                                                        <>
-                                                            <span className='font-bold'>Información detectada:</span>
-                                                            <br />
-                                                            Fechas(s): <span className='font-bold'> {fechasSet.join(", ")} </span>
-                                                            <br />
-                                                            Derecho(s): <span className='font-bold'>{derechosList}</span>
-                                                            <br />
-                                                            Distrito: <span className='font-bold'> {shapeName} </span>
-                                                        </>
-                                                    );
-                                                })()
-                                            }
-                                        </span>
-                                    </Popup>
-                                </Marker>
-                            ) : null;
-                        })}
-
-                        <GeoJSON data={departamentosGeoJSONData} />
-                    </MapContainer>
-                </div>
-
             </div>
         </div>
     )

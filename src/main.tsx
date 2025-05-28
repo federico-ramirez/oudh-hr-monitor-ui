@@ -7,6 +7,7 @@ import Nav from './components/Nav/Nav'
 import Footer from './components/Footer/Footer'
 import Results from './pages/Results/Results'
 import Results2 from './pages/Results/Results2'
+import NotFound from './pages/NotFound/NotFound';
 
 
 createRoot(document.getElementById('root')!).render(
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')!).render(
       <Route path='/' Component={Home} />
       <Route path='/results' Component={Results} />
       <Route path='/results2' Component={Results2} />
+      <Route path='/*' Component={NotFound} />
     </Routes>
     <Footer />
   </BrowserRouter>
