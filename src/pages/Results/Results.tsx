@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import HeatmapChart from "../../components/Maps/Heatmap";
 import { ApiServices } from "../../services/api.service";
 import MapView from "../../components/Maps/MapView";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
+import { ReturnButton } from "../../components/Buttons/ReturnButton";
 
 export default function Results() {
     const location = useLocation()
@@ -12,11 +13,6 @@ export default function Results() {
     const [getDataError, setGetDataError] = useState(false);
 
     const [results, setResults] = useState<any[]>([]);
-
-    const navigate = useNavigate();
-    const handleClick = () => {
-        navigate('../');
-    }
 
     const getHeatmapData = async () => {
         setLoadingHeatmap(true);
@@ -65,22 +61,13 @@ export default function Results() {
                             <p className="text-2xl font-bold">Cargando resultados...</p>
                             <p className="text-xl">Por favor, espere, no recargue y no cierre esta página mientras se procesa el monitoreo</p>
                             {getDataError ? 
-                                <button
-                                onClick={handleClick}
-                                className="bg-arsenic text-french-gray font-bold w-max h-12 px-8 rounded-lg hover:bg-davy-gray transition duration-200 mt-8">
-                                Volver a intentar
-                            </button> : ""}
+                                <ReturnButton /> : ""}
                         </>
                         :
                         <>
-                            <p className="text-2xl font-bold">Cantidad de noticias por derecho</p>
                             <HeatmapChart resultados={results} />
                             <MapView resultados={results} />
-                            <button
-                                onClick={handleClick}
-                                className="bg-arsenic text-french-gray font-bold w-max h-12 px-8 rounded-lg hover:bg-davy-gray transition duration-200 mt-8">
-                                Volver al inicio
-                            </button>
+                            <ReturnButton />
                         </>
                 }
             </div>
