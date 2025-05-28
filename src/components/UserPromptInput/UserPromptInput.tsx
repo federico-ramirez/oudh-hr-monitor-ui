@@ -4,10 +4,17 @@ import { MultiValue } from "react-select";
 import { useNavigate } from "react-router-dom";
 import MyDate from "../../helpers/dateHelper";
 import { toast, ToastContainer } from "react-toastify";
+import { ApiServices } from "../../services/api.service";
 
 type OptionType = {
     value: string;
     label: string;
+}
+
+type ResponseProps = {
+    right: string,
+    id_right: string,
+    order: number
 }
 
 export default function UserPromptInput() {
@@ -17,8 +24,23 @@ export default function UserPromptInput() {
     const [fechaFinal, setFechaFinal] = useState<Date>(new Date())
     const [sabadoPasado, setSabadoPasado] = useState<Date | null>(null)
     const [derechosSeleccionados, setDerechosSeleccionados] = useState<MultiValue<OptionType>>([])
+    const [humanRightsOptions, setHumanRightsOptions] = useState<MultiValue<OptionType>>([])
+
+    const fetchHumanRightsData = async () => {
+        try {
+            const response = await ApiServices.getHumanRightsValues();
+            const values = response.map((item: any) => ({
+                value: item.right,
+                label: item.right,
+            }));
+            setHumanRightsOptions(values);
+        } catch (error) {
+            console.error("Error obteniendo valores para Derechos Humanos");
+        }
+    }
 
     useEffect(() => {
+        fetchHumanRightsData();
         const semanaPasada = new Date(hoy);
         semanaPasada.setDate(hoy.getDate() - 7);
 
@@ -32,16 +54,6 @@ export default function UserPromptInput() {
         setFechaInicial(domingoPasado);
         setFechaFinal(sabadoPasado);
     }, []);
-
-    const humanRightsOptions = [
-        { value: "vida", label: "Derecho a la vida" },
-        { value: "salud", label: "Derecho a la salud" },
-        { value: "vivienda", label: "Derecho a la vivienda" },
-        { value: "educación", label: "Derecho a la educación" },
-        { value: "migración", label: "Derecho a la migración" },
-        { value: "identidad", label: "Derecho a la identidad" },
-        { value: "alimentación", label: "Derecho a la alimentación" }
-    ]
 
     const loadSelectOptions = (searchValue: string, callback: any) => {
         setTimeout(() => {
@@ -64,10 +76,6 @@ export default function UserPromptInput() {
     const parseLocalDate = (value: string): Date => {
         const [year, month, day] = value.split("-").map(Number);
         return new Date(year, month - 1, day);
-    }
-
-    const isValidDate = (date: Date): boolean => {
-        return !isNaN
     }
 
     const handleChangeFechaInicial = (value: string) => {

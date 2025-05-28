@@ -1,16 +1,16 @@
 const BASE_URL = "http://localhost:8000";
 
 export const ApiServices = {
-    classifyNews: async (fechas: string[], derechos: string[]) => {
+    classifyNews: async (dates: string[], rights: string[]) => {
         try {
-            const response = await fetch(`${BASE_URL}/procesar`, {
+            const response = await fetch(`${BASE_URL}/news/process`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    fechas: fechas,
-                    derechos: derechos,
+                    dates: dates,
+                    rights: rights,
                 }),
             });
 
@@ -23,5 +23,21 @@ export const ApiServices = {
             console.error("Error al consultar la API:", error);
             return [];
         }
-    }
+    },
+    getHumanRightsValues: async () => {
+        try {
+            const response = await fetch(`${BASE_URL}/rights`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+    
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error("Error al consultar la API: ", error);
+            return [];
+        }
+    } 
 }
