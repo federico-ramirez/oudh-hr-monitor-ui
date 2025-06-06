@@ -1,13 +1,12 @@
 import { useRef } from 'react'
-import { MapContainer, Marker, Popup, TileLayer, GeoJSON } from 'react-leaflet'
-import { FeatureCollection } from 'geojson'
+import { MapContainer, Marker, Popup, TileLayer, GeoJSON, Circle, FeatureGroup } from 'react-leaflet'
 import { ExportButton } from '../Buttons/ExportButton';
 import { useDownloadMenu } from '../../hooks/useDownloadMenu';
 import { AvailableImageFormatToExport } from '../../types/types'
 import jsPDF from 'jspdf'
 import domtoimage from 'dom-to-image';
 import departamentosGeoJSONData from '../../utils/departamentos-geoJSONData'
-import distritosGeoJSONData from '../../utils/distritos-geoJSONData'
+import distritosCoordinatesData from '../../utils/distritosCoordinatesData';
 import 'leaflet/dist/leaflet.css'
 
 interface MapViewProps {
@@ -19,7 +18,7 @@ interface MapViewProps {
             lugares: string[],
         }[]
     }[]
-}
+};
 
 export default function MapView({ resultados }: MapViewProps) {
     const mapaRef = useRef<HTMLDivElement>(null);
@@ -34,27 +33,21 @@ export default function MapView({ resultados }: MapViewProps) {
             .filter(item => item.lugares !== undefined)
             .flatMap(item =>
                 item.lugares.map(lugar =>
-                    lugar.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+                    lugar.normalize("NFD").replace(/[\u0300-\u036f]/g, "")//.toLowerCase()
                 )
             )
     );
 
-    const filteredFeatures = distritosGeoJSONData.features.filter(feature => {
-        const shapeName = feature.properties?.shapeName;
-        if (!shapeName) return false;
+    const filteredDistricts = distritosCoordinatesData.filter(district => {
+        const districtValue = district.distrito;
+        if (!districtValue) return false;
 
-        const normalizedShapeName = shapeName
+        const normalizedDistrictValue = districtValue
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase();
-
-        return resultadosLugaresSet.has(normalizedShapeName);
+        //.toLowerCase();
+        return resultadosLugaresSet.has(normalizedDistrictValue);
     });
-
-    const filteredGeoJSON: FeatureCollection = {
-        type: "FeatureCollection",
-        features: filteredFeatures
-    };
 
     const lugarToDerechoMap = new Map<string, { derecho: string, fecha: string }[]>();
     resultadosSet?.forEach(entry => {
@@ -138,7 +131,7 @@ export default function MapView({ resultados }: MapViewProps) {
                 <div className="absolute right-6">
                     <div className="relative inline-block text-left">
                         {
-                            filteredFeatures.length > 0 ?
+                            filteredDistricts.length > 0 ?
                                 <ExportButton
                                     openDownloadMenu={openDownloadMenu}
                                     toggleOpenDownloadMenu={toggleOpenDownloadMenu}
@@ -152,31 +145,23 @@ export default function MapView({ resultados }: MapViewProps) {
             </div>
 
             <div className='w-full max-w-[1000px] max-h-[700px] flex flex-col items-center gap-4'>
-                {
-                    filteredFeatures.length > 0 ?
-                        <div id='map-container' ref={mapaRef}>
-                            <MapContainer
-                                center={[13.75135, -88.91741]}
-                                zoom={9}
-                                scrollWheelZoom={false}
-                                className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
-                                <TileLayer
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                />
-                                {filteredGeoJSON.features.map((feature, index) => {
-                                    let position: [number, number] | null = null;
+                {filteredDistricts.length > 0 ?
+                    <div id='map-container' ref={mapaRef}>
+                        <MapContainer
+                            center={[13.75135, -88.91741]}
+                            zoom={9}
+                            scrollWheelZoom={false}
+                            className='w-[350px] h-[275px] md:w-[700px] md:h-[500px] lg:w-[900px] lg:h-[585px] mx-auto rounded-lg border border-gray-5 00'>
+                            <TileLayer
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            {filteredDistricts.map((district, index) => {
+                                const position = district.position as [number, number];
 
-                                    if (feature.geometry.type === 'Polygon') {
-                                        const coords = feature.geometry.coordinates[0][0];
-                                        position = [coords[1], coords[0]];
-                                    } else if (feature.geometry.type === 'MultiPolygon') {
-                                        const coords = feature.geometry.coordinates[0][0][0];
-                                        position = [coords[1], coords[0]];
-                                    }
-
-                                    return position ? (
-                                        <Marker key={index} position={position}>
+                                return position ? (
+                                    <FeatureGroup key={index}>
+                                        <Marker position={position}>
                                             <Popup
                                                 autoClose={false}
                                                 closeOnClick={false}
@@ -184,8 +169,8 @@ export default function MapView({ resultados }: MapViewProps) {
                                                 <span className='text-indigo-950 inter-font'>
                                                     {
                                                         (() => {
-                                                            const shapeName = feature.properties?.shapeName;
-                                                            const normalizedeShapeName = shapeName
+                                                            const distrito = district.distrito;
+                                                            const normalizedeShapeName = distrito
                                                                 ?.normalize("NFD")
                                                                 .replace(/[\u0300-\u036f]/g, "")
                                                                 .toLowerCase();
@@ -196,18 +181,31 @@ export default function MapView({ resultados }: MapViewProps) {
 
                                                             if (!entries?.length) return <span>Sin información</span>
 
-                                                            const derechosList = entries.map(e => e.derecho).join(", ");
-                                                            const fechasSet = Array.from(new Set(entries.map(e => e.fecha)))
+                                                            const fechasByDerecho = entries.reduce((acc, { fecha, derecho }) => {
+                                                                if (!acc[derecho]) acc[derecho] = new Set();
+                                                                acc[derecho].add(fecha);
+                                                                return acc;
+                                                            }, {} as Record<string, Set<string>>);
+
+                                                            function capitalizeFirstLetter(word: string) {
+                                                                if (!word) return '';
+                                                                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                                                            }
+
+                                                            const formattedFechas = Object.entries(fechasByDerecho).map(
+                                                                ([derecho, fechas]) => `${capitalizeFirstLetter(derecho)} en la(s) fecha(s): ${Array.from(fechas).join(", ")}`
+                                                            );
 
                                                             return (
                                                                 <>
-                                                                    <span className='font-bold'>Información detectada:</span>
+                                                                    <span>Derecho(s) detectado(s):</span>
                                                                     <br />
-                                                                    Fechas(s): <span className='font-bold'> {fechasSet.join(", ")} </span>
-                                                                    <br />
-                                                                    Tema(s): <span className='font-bold'>{derechosList}</span>
-                                                                    <br />
-                                                                    Distrito: <span className='font-bold'> {shapeName} </span>
+                                                                    <ol className='font-semibold list-decimal list-inside'>
+                                                                        {formattedFechas.map((line, i) => (
+                                                                            <li key={i}>{line}</li>
+                                                                        ))}
+                                                                    </ol>
+                                                                    Ubicación: <span className='font-semibold'> {district.distrito+", "+district.municipio+", "+district.departamento} </span>
                                                                 </>
                                                             );
                                                         })()
@@ -215,16 +213,17 @@ export default function MapView({ resultados }: MapViewProps) {
                                                 </span>
                                             </Popup>
                                         </Marker>
-                                    ) : null;
-                                })}
-
-                                <GeoJSON data={departamentosGeoJSONData} />
-                            </MapContainer>
-                        </div>
-                        :
-                        <h2 className='text-center p-2'>No se encontraron lugares de El Salvador en las noticias monitoreadas.</h2>
+                                        <Circle center={position} radius={2500} pathOptions={{ color: "#f55505" }} />
+                                    </FeatureGroup>
+                                ) : null;
+                            })}
+                            <GeoJSON data={departamentosGeoJSONData} style={{ color: "#28366A" }} />
+                        </MapContainer>
+                    </div>
+                    :
+                    <h2 className='text-center p-2'>No se encontraron lugares de El Salvador en las noticias monitoreadas.</h2>
                 }
             </div>
-        </div>
+        </div >
     )
 }
