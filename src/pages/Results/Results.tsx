@@ -13,6 +13,7 @@ export default function Results() {
     const [getDataError, setGetDataError] = useState(false);
 
     const [results, setResults] = useState<any[]>([]);
+    const [newsIds, setNewsIds] = useState<any[]>([]);
 
     const getHeatmapData = async () => {
         setLoadingHeatmap(true);
@@ -21,6 +22,7 @@ export default function Results() {
             console.log(data)
             if (data.resultados.length > 0) {
                 setResults(data.resultados);
+                setNewsIds(data.noticias);
 
                 setLoadingHeatmap(false);
                 setGetDataError(false);
@@ -40,7 +42,7 @@ export default function Results() {
     }, [])
 
     const downloadCsv = async () => {
-        const data = await fetchNewsDetails(["dd5ee567-155c-43df-a2f6-577b8ed0846c"], ["Derecho a la vida", "Derecho a la alimentación"]);
+        const data = await fetchNewsDetails(newsIds, derechos);
         const csv = convertToCSV(data);
         downloadCSV(csv);
     };
