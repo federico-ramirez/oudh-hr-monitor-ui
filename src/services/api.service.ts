@@ -1,7 +1,7 @@
 const BASE_URL = "http://localhost:8000";
 
 export const ApiServices = {
-    classifyNews: async (dates: string[], rights: string[]) => {
+    classifyNews: async (dates: string[], rights: string[], signal: any) => {
         try {
             const response = await fetch(`${BASE_URL}/news/process`, {
                 method: "POST",
@@ -12,6 +12,7 @@ export const ApiServices = {
                     dates: dates,
                     rights: rights,
                 }),
+                signal,
             });
 
             const data = await response.json();
