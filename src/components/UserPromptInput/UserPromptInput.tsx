@@ -17,7 +17,7 @@ export default function UserPromptInput() {
     const minDate = new Date(2000, 0, 1)
     const [fechaInicial, setFechaInicial] = useState<Date>(new Date())
     const [fechaFinal, setFechaFinal] = useState<Date>(new Date())
-    const [sabadoPasado, setSabadoPasado] = useState<Date | null>(null)
+    const [fechaMaxima, setFechaMaxima] = useState<Date | null>(null)
     const [derechosSeleccionados, setDerechosSeleccionados] = useState<MultiValue<OptionType>>([])
     const [humanRightsOptions, setHumanRightsOptions] = useState<MultiValue<OptionType>>([])
 
@@ -36,17 +36,21 @@ export default function UserPromptInput() {
 
     useEffect(() => {
         fetchHumanRightsData();
+        hoy.setHours(0, 0, 0, 0);
+
         const semanaPasada = new Date(hoy);
         semanaPasada.setDate(hoy.getDate() - 7);
 
         const domingoPasado = new Date(semanaPasada);
         domingoPasado.setDate(semanaPasada.getDate() - semanaPasada.getDay());
+        domingoPasado.setHours(0, 0, 0, 0);
+        setFechaInicial(domingoPasado);
 
         const sabadoPasado = new Date(domingoPasado);
         sabadoPasado.setDate(domingoPasado.getDate() + 6);
+        sabadoPasado.setHours(0, 0, 0, 0);
 
-        setSabadoPasado(sabadoPasado);
-        setFechaInicial(domingoPasado);
+        setFechaMaxima(sabadoPasado);
         setFechaFinal(sabadoPasado);
     }, []);
 
@@ -79,7 +83,7 @@ export default function UserPromptInput() {
             return false
         }
         if (fechaFinal && newFechaInicial > fechaFinal) {
-            toast("La fecha inicial no puede ser mayor que la fecha final.", { type: 'error' });
+            toast("La fecha inicial no puede ser mayor que la fecha final.", { type: 'warning' });
             return false;
         }
         setFechaInicial(newFechaInicial);
@@ -87,12 +91,12 @@ export default function UserPromptInput() {
     };
 
     const handleChangeFechaFinal = (value: string) => {
-        const newFechaFinal = parseLocalDate(value);
+        const newFechaFinal: Date = parseLocalDate(value);
         if (newFechaFinal < minDate) {
             return false
         }
         if (fechaInicial && newFechaFinal < fechaInicial) {
-            toast("La fecha final no puede ser menor que la fecha inicial.", { type: 'error' });
+            toast("La fecha final no puede ser menor que la fecha inicial.", { type: 'warning' });
             return false;
         }
         setFechaFinal(newFechaFinal);
@@ -109,8 +113,15 @@ export default function UserPromptInput() {
     const navigate = useNavigate()
 
     const handleClick = () => {
+        const dif: number = fechaFinal.getTime() - fechaInicial.getTime();
+        const diasDif: number = Math.round(dif / (1000 * 60 * 60 * 24));
+
         if (isNaN(fechaInicial.getTime()) || isNaN(fechaFinal.getTime())) {
-            toast("La(s) fecha(s) ingresada(s) no tiene(n) el formato correcto.", { type: 'error' });
+            toast("La(s) fecha(s) ingresada(s) no tiene(n) el formato correcto.", { type: 'warning' });
+            return
+        }
+        if (diasDif > 14) {
+            toast("El sistema no permite monitoreos mayores a 15 días.", { type: 'warning' });
             return
         }
         if (derechosSeleccionados.length > 0) {
@@ -126,7 +137,8 @@ export default function UserPromptInput() {
                 },
             });
         } else {
-            toast("Debe seleccionar una o más temáticas.", { type: 'error' })
+            toast("Debe seleccionar una o más temáticas.", { type: 'warning' });
+            return
         }
     }
 
@@ -150,7 +162,7 @@ export default function UserPromptInput() {
                 </label>
                 <DateInput
                     value={fechaInicial ? formatDateForInput(fechaInicial) : ''}
-                    max={sabadoPasado ? formatDateForInput(sabadoPasado) : undefined}
+                    max={fechaMaxima ? formatDateForInput(fechaMaxima) : undefined}
                     min={formatDateForInput(minDate)}
                     onChange={(val) => {
                         const localDate = parseLocalDate(val);
@@ -167,7 +179,7 @@ export default function UserPromptInput() {
                 </label>
                 <DateInput
                     value={fechaFinal ? formatDateForInput(fechaFinal) : ''}
-                    max={sabadoPasado ? formatDateForInput(sabadoPasado) : undefined}
+                    max={fechaMaxima ? formatDateForInput(fechaMaxima) : undefined}
                     onChange={(val) => {
                         const localDate = parseLocalDate(val);
                         handleChangeFechaFinal(val)
