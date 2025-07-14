@@ -1,44 +1,81 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import HeatmapChart from "../../components/Maps/Heatmap";
-import { ApiServices } from "../../services/api.service";
 import MapView from "../../components/Maps/MapView";
 import { useLocation } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import { ReturnButton } from "../../components/Buttons/ReturnButton";
+import { useNewsClassification } from "../../hooks/useNewsClassification";
+import CircularProgress, { CircularProgressProps } from "@mui/material/CircularProgress";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 
-export default function Results() {
+function CircularProgressWithLabel(
+    props: CircularProgressProps & { value: number },
+) {
+    return (
+        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+            <CircularProgress
+                variant="determinate"
+                value={100}
+                size={150}
+                thickness={7}
+                sx={{ color: '#d5d5d5', position: 'absolute', left: 0, strokeLinecap: 'round' }}
+            />
+            <CircularProgress
+                variant="determinate"
+                {...props}
+                size={150}
+                thickness={7}
+                sx={{ color: '#e7870d', strokeLinecap: 'round' }}
+            />
+            <Box
+                sx={{
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
+                    position: 'absolute',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <Typography
+                    variant="body1"
+                    component="div"
+                    sx={{ color: 'text.primary' }}
+                >{`${Math.round(props.value)}%`}</Typography>
+            </Box>
+        </Box>
+    );
+}
+
+export default function Results3() {
     const location = useLocation()
     const { fechas = [], derechos = [] } = location.state || { fechas: [], derechos: [] }
-    const [loadingHeatmap, setLoadingHeatmap] = useState(true);
-    const [getDataError, setGetDataError] = useState(false);
 
-    const [results, setResults] = useState<any[]>([]);
-    const [newsIds, setNewsIds] = useState<any[]>([]);
-
-    const getHeatmapData = async () => {
-        setLoadingHeatmap(true);
-        try {
-            const data = await ApiServices.classifyNews(fechas, derechos);
-            console.log(data)
-            if (data.resultados.length > 0) {
-                setResults(data.resultados);
-                setNewsIds(data.noticias);
-
-                setLoadingHeatmap(false);
-                setGetDataError(false);
-            } else {
-                toast("Algo salió mal al obtener los resultados. Intente nuevamente.", { type: 'error' });
-                setGetDataError(true);
-            }
-        } catch (error) {
-            toast("Algo salió mal al obtener los resultados. Intente nuevamente.", { type: 'error' });
-            setGetDataError(true);
-            console.log(error);
-        }
-    }
+    const {
+        loading,
+        progress,
+        progressMessage,
+        progressStage,
+        results,
+        newsIds,
+        type,
+        error
+    } = useNewsClassification(fechas, derechos);
 
     useEffect(() => {
-        getHeatmapData();
+        // Protección contra recarga de pestaña
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            toast("Por favor, no intente recargar la pestaña mientras se procesa el monitoreo.", { type: 'warning' });
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
     }, [])
 
     const downloadCsv = async () => {
@@ -77,7 +114,7 @@ export default function Results() {
                     return lugares
                         ? `${derecho} (${cantidad}) - Lugares: ${lugares}`
                         : `${derecho} (${cantidad})`;
-                }).join(" | "); // Puedes cambiar el separador si deseas
+                }).join(" | ");
             }
 
             rows.push([...baseInfo, detalles]);
@@ -85,7 +122,7 @@ export default function Results() {
 
         const csvContent = [header, ...rows].map(row =>
             row.map(cell =>
-                `"${String(cell).replace(/"/g, '""')}"` // Escapar comillas para CSV correcto
+                `"${String(cell).replace(/"/g, '""')}"`
             ).join(",")
         ).join("\n");
 
@@ -120,25 +157,49 @@ export default function Results() {
                     theme="colored"
                 />
                 {
-                    loadingHeatmap
+                    loading
                         ?
-                        <>
-                            <p className="text-2xl font-bold">Cargando resultados...</p>
-                            <p className="text-xl">Por favor, espere, no recargue y no cierre esta página mientras se procesa el monitoreo</p>
-                            {getDataError ?
-                                <ReturnButton /> : ""}
-                        </>
+                        <div className="flex items-center justify-center self-center m-auto">
+                            {!error ?
+                                <div className="px-8 py-4 rounded-lg shadow-xl bg-gray-200 items-center w-fit">
+                                    <p className="text-2xl font-bold mt-2 text-oudh-blue">Cargando resultados del monitoreo...</p>
+                                    <p className="text-xl font-semibold mt-2">Etapa actual: {progressStage}</p>
+                                    <p className="text-xl font-semibold mb-4">{progressMessage}</p>
+                                    <CircularProgressWithLabel value={progress} className="w-40 h-40 md:w-60 md:h-60 lg:w-80 lg:h-80" />
+                                    <p className="text-md mt-4">Espere mientras finaliza el monitoreo.</p>
+                                    <p className="text-md mb-2">Por favor, no recargue y no cierre esta página.</p>
+                                </div>
+                                :
+                                <div className="p-4 rounded-lg shadow-xl bg-orange-200">
+                                    <p className="text-2xl font-bold my-4">Error en monitoreo</p>
+                                    <p className="text-xl">Ocurrió un error mientras se realizaba el monitoreo.</p>
+                                    <p className="text-xl">{progressMessage}</p>
+                                    <p className="text-xl">Regrese al inicio e intente el monitoreo nuevamente.</p>
+                                    <ReturnButton />
+                                </div>
+                            }
+                        </div>
                         :
                         <>
-                            <HeatmapChart resultados={results} />
-                            <MapView resultados={results} />
-                            <button
-                                className="w-max my-4 px-8 py-2 bg-[#183555] text-white rounded-md cursor-pointer"
-                                onClick={downloadCsv}
-                            >
-                                DESCARGAR CSV
-                            </button>
-                            <ReturnButton />
+                            {type === "result" ?
+                                <>
+                                    <HeatmapChart resultados={results} />
+                                    <MapView resultados={results} />
+                                    <button
+                                        className="w-max my-4 h-12 px-8 bg-[#183555] text-white rounded-md cursor-pointer font-semibold hover:bg-[#265588]"
+                                        onClick={downloadCsv}
+                                    >
+                                        Descargar CSV
+                                    </button>
+                                    <ReturnButton />
+                                </> :
+                                <div className="p-4 rounded-lg shadow-xl bg-gray-200">
+                                    <p className="text-2xl font-bold my-4">Monitoreo sin resultados</p>
+                                    <p className="text-xl">No se obtuvieron resultados con las fechas y temáticas utilizadas</p>
+                                    <p className="text-xl">Regrese al inicio y realice otro monitoreo con parámetros distintos.</p>
+                                    <ReturnButton />
+                                </div>
+                            }
                         </>
                 }
             </div>
