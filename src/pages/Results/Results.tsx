@@ -186,7 +186,7 @@ export default function Results3() {
                                     <HeatmapChart resultados={results} />
                                     <MapView resultados={results} />
                                     <button
-                                        className="w-max my-4 h-12 px-8 bg-[#183555] text-white rounded-md cursor-pointer font-semibold hover:bg-[#265588]"
+                                        className="w-max my-4 h-12 px-8 bg-oudh-blue text-white rounded-md cursor-pointer font-semibold hover:bg-liberty-blue transition duration-200"
                                         onClick={downloadCsv}
                                     >
                                         Descargar CSV

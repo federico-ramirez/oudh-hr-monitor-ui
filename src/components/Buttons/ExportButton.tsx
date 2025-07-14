@@ -24,7 +24,7 @@ export const ExportButton = (
         <div className="relative inline-block text-left">
             <button
                 onClick={toggleOpenDownloadMenu}
-                className="bg-[#183555] text-white cursor-pointer font-bold py-2 px-5 flex items-center rounded-md gap-3 hover:bg-[#265588]"
+                className="bg-oudh-blue text-white cursor-pointer font-bold py-2 px-5 flex items-center rounded-md gap-3 hover:bg-liberty-blue transition duration-200"
             >
                 Exportar
                 <FaCaretDown className="text-[22px]" />
